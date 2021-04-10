@@ -1,0 +1,324 @@
+
+nginx: download
+
+http://nginx.org/en/download.html
+
+
+https://www.nginx.com/resources/wiki/start/topics/examples/full/
+
+https://blog.kkbruce.net/2018/06/nginx-basic-for-windows-based.html#.YHHihegzZPY
+
+NGINX 基礎入門(Windows 版)
+
+REVERSE PROXY
+
+location /some/path/ {
+    proxy_pass http://www.example.com/link/;
+}
+
+location ~ \.php {
+    proxy_pass http://127.0.0.1:8000;
+}
+
+預設 NGINX 在 Proxy 請求會重新定義 Host 和 Connection Header，並消除其值為空字串。然後 Host 會設定 $proxy_host 的值，Connection 設定為 close。可以使用 proxy_set_header 重新設置：
+
+location /some/path/ {
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_pass http://localhost:8000;
+}
+
+
+傳遞 CLIENT IP
+在使用 Proxy 時，Client 無法接觸至後端主機，這會造成後端主機無法取得 Client 的資訊，例如，IP 等，都必須透過 proxy_set_header Header 來傳遞。
+
+proxy_set_header Host $host;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $scheme;
+
+
+
+LOAD BALANCING
+
+NGINX 另一大重點功能是透過簡單的設置，它就能成為一台強大的 Load Balance 伺服器。
+
+http {
+    upstream myapp1 {
+        server srv1.example.com;
+        server srv2.example.com;
+        server srv3.example.com;
+    }
+
+    server {
+        listen 80;
+
+        location / {
+            proxy_pass http://myapp1;
+        }
+    }
+}
+
+upstream 總共有三個模式：
+
+round-robin (default)
+least_conn
+ip_hash
+
+
+
+
+
+
+
+執行 C:\nginx-1.19.9\nginx.exe 直接啟動 nginx
+
+
+nginx.exe -s reload  重新載入conf/nginx.conf
+
+nginx.exe -s stop
+
+nginx.exe -c ./conf/nginx.conf  指定 conf 檔案啟動 nginx
+
+
+測試
+
+C:\eclipse-workspace-Test\HelloWorldBootDocker\Hello_1.bat
+
+java -jar target/HelloWorldBootDocker-0.0.1-SNAPSHOT.jar
+
+C:\eclipse-workspace-Test\HelloWorldBootDocker\Hello_2.bat
+
+java -jar target/HelloWorldBootDocker-0.0.1-SNAPSHOT.jar --spring.profiles.active=2
+
+
+
+http://127.0.0.1/hello
+
+Hello ,Spring Boot! port:19990
+
+http://127.0.0.1/hello
+
+Hello ,Spring Boot! port:19992
+
+
+
+
+Microsoft Windows [版本 10.0.19042.906]
+(c) Microsoft Corporation. 著作權所有，並保留一切權利。
+
+C:\Users\Han>cd ../../
+
+C:\>cd nginx-1.19.9
+
+C:\nginx-1.19.9>nginx.exe -s reload
+
+C:\nginx-1.19.9>nginx.exe -s stop
+
+C:\nginx-1.19.9>nginx.exe -c ./config/nginx.conf
+nginx: [emerg] CreateFile() "./config/nginx.conf" failed (3: The system cannot find the path specified)
+
+C:\nginx-1.19.9>nginx.exe -c ./conf/nginx.conf
+
+
+
+
+Microsoft Windows [版本 10.0.19042.906]
+(c) Microsoft Corporation. 著作權所有，並保留一切權利。
+
+C:\Users\Han>cd /c
+系統找不到指定的路徑。
+
+C:\Users\Han>c:
+
+C:\Users\Han>cd ../..
+
+C:\>cd nginx-1.19.9
+
+C:\nginx-1.19.9>nginx.exe -s stop
+
+C:\nginx-1.19.9>
+
+Han@DESKTOP-H0MOQCV MINGW64 ~
+$ cd /c/nginx-1.19.9/conf/
+
+Han@DESKTOP-H0MOQCV MINGW64 /c/nginx-1.19.9/conf
+$ ls -al
+total 52
+drwxr-xr-x 1 Han 197121    0 Apr 11 02:20 ./
+drwxr-xr-x 1 Han 197121    0 Apr 11 01:54 ../
+-rw-r--r-- 1 Han 197121 1103 Mar 30 22:47 fastcgi.conf
+-rw-r--r-- 1 Han 197121 1032 Mar 30 22:47 fastcgi_params
+-rw-r--r-- 1 Han 197121 2946 Mar 30 22:47 koi-utf
+-rw-r--r-- 1 Han 197121 2326 Mar 30 22:47 koi-win
+-rw-r--r-- 1 Han 197121 5328 Mar 30 22:47 mime.types
+-rw-r--r-- 1 Han 197121 3141 Apr 11 02:34 nginx.conf
+-rw-r--r-- 1 Han 197121 2773 Mar 30 22:47 nginx.conf.origin
+-rw-r--r-- 1 Han 197121  653 Mar 30 22:47 scgi_params
+-rw-r--r-- 1 Han 197121  681 Mar 30 22:47 uwsgi_params
+-rw-r--r-- 1 Han 197121 3736 Mar 30 22:47 win-utf
+
+Han@DESKTOP-H0MOQCV MINGW64 /c/nginx-1.19.9/conf
+$ diff -Naur nginx.conf.origin nginx.conf
+--- nginx.conf.origin   2021-03-30 22:47:55.000000000 +0800
++++ nginx.conf  2021-04-11 02:34:47.263935200 +0800
+@@ -32,6 +32,12 @@
+
+     #gzip  on;
+
++    upstream myserver {
++        server 127.0.0.1:19990;
++        server 127.0.0.1:19992;
++        # ip_hash;
++    }
++
+     server {
+         listen       80;
+         server_name  localhost;
+@@ -43,6 +49,11 @@
+         location / {
+             root   html;
+             index  index.html index.htm;
++            # add for REVERSE PROXY
++            proxy_pass http://myserver;
++            proxy_set_header Host $host;
++            proxy_set_header X-Real-IP $remote_addr;
++            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+         }
+
+         #error_page  404              /404.html;
+
+
+
+Han@DESKTOP-H0MOQCV MINGW64 /c/nginx-1.19.9/conf
+$ cat nginx.conf
+
+#user  nobody;
+worker_processes  1;
+
+#error_log  logs/error.log;
+#error_log  logs/error.log  notice;
+#error_log  logs/error.log  info;
+
+#pid        logs/nginx.pid;
+
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    #log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+    #                  '$status $body_bytes_sent "$http_referer" '
+    #                  '"$http_user_agent" "$http_x_forwarded_for"';
+
+    #access_log  logs/access.log  main;
+
+    sendfile        on;
+    #tcp_nopush     on;
+
+    #keepalive_timeout  0;
+    keepalive_timeout  65;
+
+    #gzip  on;
+
+    upstream myserver {
+        server 127.0.0.1:19990;
+        server 127.0.0.1:19992;
+        # ip_hash;
+    }
+
+    server {
+        listen       80;
+        server_name  localhost;
+
+        #charset koi8-r;
+
+        #access_log  logs/host.access.log  main;
+
+        location / {
+            root   html;
+            index  index.html index.htm;
+            # add for REVERSE PROXY
+            proxy_pass http://myserver;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+
+        #error_page  404              /404.html;
+
+        # redirect server error pages to the static page /50x.html
+        #
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+
+        # proxy the PHP scripts to Apache listening on 127.0.0.1:80
+        #
+        #location ~ \.php$ {
+        #    proxy_pass   http://127.0.0.1;
+        #}
+
+        # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
+        #
+        #location ~ \.php$ {
+        #    root           html;
+        #    fastcgi_pass   127.0.0.1:9000;
+        #    fastcgi_index  index.php;
+        #    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+        #    include        fastcgi_params;
+        #}
+
+        # deny access to .htaccess files, if Apache's document root
+        # concurs with nginx's one
+        #
+        #location ~ /\.ht {
+        #    deny  all;
+        #}
+    }
+
+
+    # another virtual host using mix of IP-, name-, and port-based configuration
+    #
+    #server {
+    #    listen       8000;
+    #    listen       somename:8080;
+    #    server_name  somename  alias  another.alias;
+
+    #    location / {
+    #        root   html;
+    #        index  index.html index.htm;
+    #    }
+    #}
+
+
+    # HTTPS server
+    #
+    #server {
+    #    listen       443 ssl;
+    #    server_name  localhost;
+
+    #    ssl_certificate      cert.pem;
+    #    ssl_certificate_key  cert.key;
+
+    #    ssl_session_cache    shared:SSL:1m;
+    #    ssl_session_timeout  5m;
+
+    #    ssl_ciphers  HIGH:!aNULL:!MD5;
+    #    ssl_prefer_server_ciphers  on;
+
+    #    location / {
+    #        root   html;
+    #        index  index.html index.htm;
+    #    }
+    #}
+
+}
+
+
